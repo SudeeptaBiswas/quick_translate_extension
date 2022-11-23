@@ -1,16 +1,24 @@
 {
 	"manifest_version": 2,
 
-	"name": "Opera Extensions — Getting Started",
-	"description": "Sample extension for the “Making your first extension” article",
+	"name": "Google Translator",
+	"description": "Translate, Dictionary with Google and Thesaurus",
 	"version": "1.0",
 	"background": {
+		"scripts_temp": ["script.js", "background.js"],
 		"scripts": ["background.js"]
 	},
 
 	"permissions": ["tabs", "activeTab", "*://*/*"],
 	"browser_action": {
-		"default_icon": "icon.png",
+		"default_icon": "translation.png",
 		"default_title": "Go to Dev.Opera!"
-	}
+	},
+	"icons": {
+      "128": "translation.png",
+      "16": "translation.png",
+      "32": "translation.png",
+      "48": "translation.png"
+   },
+   "version": "2"
 }

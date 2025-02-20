@@ -24,16 +24,18 @@ if(document.getElementById("synonyms") === null){
 	div.style.overflowY= "auto";
 	document.body.appendChild(div);
 
-	var scri = document.createElement("script");
-	scri.innerHTML = 'function process(result){output = "";for (key in result.response) {list = result.response[key].list;output += list.synonyms+"<br>";}if (output) {output=output.split("|").join(", ");div = document.getElementById("synonyms");div.innerHTML = output;div.style.display= "block";}}';
-	document.body.appendChild(scri);
-
 	document.getElementById("synonyms").addEventListener("click", myFunction);
 }
 
 function getThesaurusTranslation() {
 	var selection = getSelectedText();
-	selection !== '' && translate(selection);  
+	if (selection === '') {
+		return;
+	}
+	// Thesaurus can be turned off on the Options page (default on)
+	chrome.storage.sync.get({thesaurusEnabled: true}, function(items) {
+		items.thesaurusEnabled && translate(selection);
+	});
 }
 
 function myFunction() {
@@ -41,22 +43,28 @@ function myFunction() {
 }
 
 function translate(selection) {
-	var s = document.createElement("script"); 
-	//s.src = "http://thesaurus.altervista.org/service.php?word="+selection+"&language=en_US&output=json&key=YOUR_API_KEY&callback=process";
-	s.src = "https://thesaurus.altervista.org/service.php?word="+selection+"&language=en_US&output=json&key=YOUR_API_KEY&callback=process"; // NOTE: replace test_only with your own KEY 
-	document.getElementsByTagName("head")[0].appendChild(s);
+	// background.js fetches the thesaurus (Manifest V3 blocks remote scripts)
+	chrome.runtime.sendMessage({type: "thesaurus", word: selection}, process);
 }
 
 function process(result){
-	  output = ""; 
-	  for (key in result.response) { 
-		list = result.response[key].list; 
-		output += list.synonyms+"<br>"; 
-	  } 
-	  if (output) {
-		output.replace('|', ', ');
-		div.innerHTML = output;
-		div.style.display= "block";
+	  var box = document.getElementById("synonyms");
+	  if (!chrome.runtime.lastError && result && result.error === "noKey") {
+		box.textContent = "Set your thesaurus key: right-click the extension icon > Options.";
+		box.style.display= "block";
+		return;
+	  }
+	  if (chrome.runtime.lastError || !result || !result.response) {
+		return;
+	  }
+	  box.textContent = "";
+	  for (var key in result.response) {
+		var list = result.response[key].list;
+		box.appendChild(document.createTextNode(list.synonyms.split("|").join(", ")));
+		box.appendChild(document.createElement("br"));
+	  }
+	  if (box.textContent) {
+		box.style.display= "block";
 	  }
 	}
 //End thesaurus transltion
@@ -135,7 +143,10 @@ function autoGoogleTranslation() {
 
 function showGoogleTranslate(selection) {
 	if (selection !== '') {
-		window.open('https://translate.google.com.bd/?hl=en&tab=wT#en/bn/'+selection,'1459774153836','width=800,height=600,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1,left=0,top=0');
+		// Target language is set on the Options page (default Bengali)
+		chrome.storage.sync.get({targetLanguage: "bn"}, function(items) {
+			window.open('https://translate.google.com/?sl=en&tl='+items.targetLanguage+'&text='+encodeURIComponent(selection)+'&op=translate','1459774153836','width=800,height=600,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1,left=0,top=0');
+		});
 	}
 }
 
